@@ -1,0 +1,64 @@
+.weui-dialog {
+  border-radius: 30px !important;
+  height: 280px !important;
+}
+.weui-dialog__hd {
+  padding: 35px 1.6em .5em;
+}
+.weui-dialog__title {
+  font-size: 34px !important;
+}
+.weui-dialog__bd {
+  font-size: 26px !important;
+}
+.weui-dialog__ft {
+  font-size: 34px !important;
+  line-height: 90px !important;
+}
+.weui-toast {
+  width: 100px !important;
+  height: 100px !important;
+  transform: translate(100%) !important;
+}
+
+.vux-datetime-cancel, .vux-datetime-confirm {
+  font-size: 32px !important;
+  height: 88px !important;
+  line-height: 88px !important;
+}
+
+.scroller-component {
+  height: 476px !important;
+}
+
+.scroller-mask {
+  background-size: 100% 204px !important;
+}
+
+.scroller-item {
+  font-size: 32px !important;
+  height: 68px !important;
+  line-height: 68px !important;
+}
+
+.scroller-indicator {
+  height: 68px !important;
+  top: 204px !important;
+}
+
+.dp-header .dp-item {
+  font-size: 32px !important;
+  height: 88px !important;
+  line-height: 88px !important;
+}
+
+.dp-content {
+  padding: 20px 0 !important;
+}
+
+.vux-datetime-cancel {
+  padding-left: 30px !important;
+}
+.vux-datetime-confirm {
+  padding-right: 30px !important;
+}
