@@ -62,3 +62,7 @@
 .vux-datetime-confirm {
   padding-right: 30px !important;
 }
+
+.weui-icon-success, .weui-icon-circle, .weui-icon-success-circle {
+  font-size: 36px !important;
+}

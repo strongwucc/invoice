@@ -92,7 +92,7 @@
 import BScroll from 'better-scroll'
 import { getRect } from '../../src/assets/js/dom'
 import { Swipeout, SwipeoutItem } from 'vux'
-import swipeoutButton from '../components/vux/swipeout-button'
+import swipeoutButton from '../components/vux/swipeout_button'
 export default {
   name: 'invoices',
   components: { Swipeout, SwipeoutItem, swipeoutButton },
