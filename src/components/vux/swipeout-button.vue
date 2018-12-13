@@ -39,5 +39,6 @@ export default {
     margin-top: 87px;
     border-radius: 49px;
     background-color: #F96D78;
+    padding: 0 !important;
   }
 </style>

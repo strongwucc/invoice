@@ -19,11 +19,11 @@ module.exports = {
       mediaQuery: false // 允许在媒体查询中转换`px`
     },
     // "postcss-viewport-units":{},
-    "cssnano": {
-      preset: "advanced",
-      autoprefixer: false,
-      "postcss-zindex": false,
-      reduceIdents: false
-    }
+    // "cssnano": {
+    //   preset: "advanced",
+    //   autoprefixer: false,
+    //   "postcss-zindex": false,
+    //   reduceIdents: false
+    // }
   }
 }

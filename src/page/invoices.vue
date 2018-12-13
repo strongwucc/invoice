@@ -232,7 +232,11 @@ export default {
         }
         // this.pullUpLoad = true // 根据接口返回的数据设置是否滑动刷新，还有数据则设置为 true
         this.$nextTick(() => {
-          this.initScroll()
+          if (!this.scroll) {
+            this.initScroll()
+          } else {
+            this.scroll.refresh()
+          }
         })
       }, 2000)
       // this.$http.post(this.API.invoices, {}).then(res => {
@@ -264,14 +268,17 @@ export default {
       this.scroll = new BScroll(this.$refs.wrapper, options)
 
       this.scroll.on('scrollEnd', (pos) => {
-        this.$emit('scrollEnd', pos)
-        console.log(pos)
         this.startY = pos.y
+        if (this.scroll.y <= (this.scroll.maxScrollY + 50) && this.pullUpDirty) {
+          this.isPullUpLoad = true
+          this.getInvoiceList()
+          this.$emit('scrollToEnd')
+        }
       })
 
-      if (this.pullUpLoad) {
-        this._initPullUpLoad()
-      }
+      // if (this.pullUpLoad) {
+      //   this._initPullUpLoad()
+      // }
     },
     // 当 DOM 结构发生变化的时候务必要调用确保滚动的效果正常
     refresh () {
@@ -431,12 +438,12 @@ export default {
         }
         .search-cancel {
           height: 60px;
-          width: 56px;
+          /*width: 56px;*/
           color: #666666;
           line-height: 60px;
           text-align: center;
           font-size: 28px;
-          margin-left: 29px;
+          /*margin-left: 25px;*/
         }
       }
       .select-area {
