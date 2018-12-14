@@ -1,29 +1,31 @@
 <template>
   <div class="invoice-page">
-    <div class="invoice-image" v-if="invoiceData.typeKey && invoiceData.typeKey === 'success'">
-      <!--<img :src="invoiceData.imageUrl">-->
-      <img src="../../src/assets/img/invoice.png">
+    <div class="invoice-image" v-if="info.status && info.status === '0000'">
+      <!--<img :src="info.imageUrl">-->
+      <img :src="info.invoiceImg">
     </div>
-    <div class="notice-area" v-if="invoiceData.typeKey && invoiceData.typeKey !== 'success'">
-      <div class="company">{{invoiceData.companyName}}</div>
-      <div class="amount">{{invoiceData.amount}}</div>
+    <div class="notice-area" v-if="info.status && info.status !== '0000'">
+      <div class="company">{{info.enterpriseName}}</div>
+      <div class="amount">{{info.invoiceAmount}}</div>
       <div class="line"></div>
       <div class="icon">
-        <img v-if="invoiceData.typeKey === 'pending'" src="../../src/assets/img/ic_success@2x.png"/>
+        <img v-if="info.status === '7777'" src="../../src/assets/img/ic_success@2x.png"/>
         <img v-else src="../../src/assets/img/ic_fail@2x.png"/>
       </div>
-      <div class="typeValue">{{invoiceData.typeValue}}</div>
-      <div class="notice">{{invoiceData.notice}}</div>
-      <div class="dateTime">申请时间：{{invoiceData.dateTime}}</div>
+      <div class="typeValue" v-if="info.status === '7777'">开票申请已提交</div>
+      <div class="typeValue" v-else>开票失败</div>
+      <div class="notice" v-if="info.status === '7777'">{{info.notice}}</div>
+      <div class="notice" v-else>{{info.notice}}</div>
+      <div class="dateTime">申请时间：{{info.dateTime}}</div>
     </div>
-    <div class="share-area" v-if="invoiceData.typeKey && invoiceData.typeKey === 'success'" @click="share">
+    <div class="share-area" v-if="info.status && info.status === '0000'" @click="share">
       分享给朋友
     </div>
-    <div class="download-area" v-if="invoiceData.typeKey && invoiceData.typeKey === 'success'" @click.stop="download">
+    <div class="download-area" v-if="info.status && info.status === '0000'" @click.stop="download">
       下载PDF文件
     </div>
-    <div class="contact-area" v-if="invoiceData.typeKey && invoiceData.typeKey !== 'success'">
-      <a :href="'tel:' + invoiceData.merContact">联系商家：{{invoiceData.merContact}}</a>
+    <div class="contact-area" v-if="info.status && info.status !== '0000'">
+      <a :href="'tel:' + info.merContact">联系商家：{{info.merContact}}</a>
     </div>
   </div>
 </template>
@@ -33,96 +35,34 @@ export default {
   name: 'invoice',
   data () {
     return {
-      invoiceData: {
-        invoiceId: 0,
-        companyName: '',
-        typeKey: '',
-        typeValue: '',
+      invoiceReqSerialNo: 0,
+      info: {
+        status: '0000',
+        invoicePdf: 'http://ceshi6.sdykt.com.cn:1280/03100160021138570170.pdf',
+        invoiceImg: '',
+        enterpriseName: '',
+        invoiceAmount: '',
         notice: '',
-        amount: '',
-        payment: '',
         dateTime: '',
-        imageUrl: '',
-        pdfUrl: '',
         merContact: ''
       }
     }
   },
   mounted () {
-    this.invoiceData.invoiceId = this.$route.params.invoiceId
+    this.invoiceReqSerialNo = this.$route.params.invoiceReqSerialNo
     this.getInvoiceDetail()
   },
   methods: {
     getInvoiceDetail () {
       this.$vux.loading.show({text: ''})
-      setTimeout(() => {
+      this.$http.post(this.API.getInvoiceInfo, {invoiceReqSerialNo: this.invoiceReqSerialNo}).then(res => {
         this.$vux.loading.hide()
-        let data = {
-          companyName: '深圳家乐福有限公司',
-          typeKey: 'success',
-          typeValue: '开票处理中',
-          notice: '开票处理中提示信息',
-          amount: '￥235',
-          payment: '上海易通金服有限公司',
-          dateTime: '2018.04.05',
-          imageUrl: '../../src/assets/img/invoice.png',
-          pdfUrl: '',
-          merContact: '8765678765'
+        if (res.return_code === '0000') {
+          this.info = res.data.info
+        } else {
+          // this.$router.replace('/error/出错啦/' + res.return_message)
         }
-        switch (this.invoiceData.invoiceId) {
-          case '1':
-            data = {
-              companyName: '深圳家乐福有限公司',
-              typeKey: 'success',
-              typeValue: '开票处理中',
-              notice: '开票处理中提示信息',
-              amount: '￥235',
-              payment: '上海易通金服有限公司',
-              dateTime: '2018.04.05',
-              imageUrl: '../../src/assets/img/invoice.png',
-              pdfUrl: '',
-              merContact: '8765678765'
-            }
-            break
-          case '2':
-            data = {
-              companyName: '深圳家乐福有限公司',
-              typeKey: 'pending',
-              typeValue: '开票处理中',
-              notice: '开票处理中提示信息',
-              amount: '￥235',
-              payment: '上海易通金服有限公司',
-              dateTime: '2018.04.05',
-              imageUrl: '../../src/assets/img/invoice.png',
-              pdfUrl: '',
-              merContact: '8765678765'
-            }
-            break
-          case '3':
-            data = {
-              companyName: '深圳家乐福有限公司',
-              typeKey: 'fail',
-              typeValue: '开票处理中',
-              notice: '开票处理中提示信息',
-              amount: '￥235',
-              payment: '上海易通金服有限公司',
-              dateTime: '2018.04.05',
-              imageUrl: '../../src/assets/img/invoice.png',
-              pdfUrl: '',
-              merContact: '8765678765'
-            }
-            break
-          default:
-            break
-        }
-
-        this.invoiceData = Object.assign({}, this.invoiceData, data)
-      }, 2000)
-
-      // this.$http.post(this.API.invoice, {}).then(res => {
-      //   this.loading = false
-      //   this.invoiceData = res.invoiceData
-      // })
+      })
     },
     share () {
       console.log('share...')

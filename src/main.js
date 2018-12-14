@@ -46,10 +46,13 @@ Vue.prototype.$http = new Http(store, api)
 Vue.prototype.API = api
 Vue.prototype.NP = NP
 
+store.dispatch('get_user_data', router)
+
 /* eslint-disable no-new */
 new Vue({
   el: '#app',
   router,
+  store,
   components: { App },
   template: '<App/>'
 })

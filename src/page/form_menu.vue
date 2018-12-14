@@ -3,13 +3,13 @@
     <div class="merchant-area">
       <div class="input-item merchant-info" :class="{edited: !editing}">
         <div class="input-label">商家</div>
-        <div class="input-area">{{orderInfo.merchantName}}</div>
+        <div class="input-area">{{merchantName}}</div>
       </div>
-      <div class="input-item amount-info" :class="{edited: !editing}">
+      <div v-if="amount > 0" class="input-item amount-info" :class="{edited: !editing}">
         <div class="input-label">开票合计金额</div>
         <div class="input-area">
-          <input v-if="editing" v-model="amount" placeholder="请输入金额"/>
-          <span v-else>{{amount}}</span>
+          <!--<input v-if="editing" v-model="amount" placeholder="请输入金额"/>-->
+          <span>￥{{amount}}</span>
         </div>
       </div>
     </div>
@@ -30,9 +30,9 @@
           <input v-if="editing" v-model="titleName" placeholder="请输入发票抬头" />
           <span v-else>{{titleName}}</span>
         </div>
-        <div class="input-append" v-if="editing"><img src="../assets/img/rb_plus@2x.png"/></div>
+        <!--<div class="input-append" v-if="editing"><img src="../assets/img/rb_plus@2x.png"/></div>-->
       </div>
-      <div class="input-item" :class="{edited: !editing}">
+      <div v-if="companyTitle === true" class="input-item" :class="{edited: !editing}">
         <div class="input-label">纳税人识别号 <span class="red">*</span></div>
         <div class="input-area">
           <input v-if="editing" v-model="identifyNum" placeholder="请输入纳税人识别号"/>
@@ -78,7 +78,7 @@
           <span v-else>{{mobile}}</span>
         </div>
       </div>
-      <div class="input-item" :class="{edited: !editing}">
+      <div v-if="invoiceType !== 1" class="input-item" :class="{edited: !editing}">
         <div class="input-label">收票人邮箱</div>
         <div class="input-area">
           <input v-if="editing" v-model="email" placeholder="请输入收票人邮箱"/>
@@ -89,15 +89,16 @@
     <div class="action-area" :class="{'action-area': true, 'disabled-area': !commitDisabled}" @click.stop="confirmEdit">
       {{buttonTxt}}
     </div>
-    <div class="recommends wrapper" ref="wrapper" v-show="showRecommends">
+    <div class="recommends wrapper" ref="wrapper" v-show="showRecommends && recommendList.length > 0">
       <div class="content">
-        <div class="recommend-item" v-for="(recommend, recommendIndex) in recommendList" :key="recommendIndex" @click.stop="selectRecommend(recommend.name)">{{recommend.name}}</div>
+        <div class="recommend-item" v-for="(recommend, recommendIndex) in recommendList" :key="recommendIndex" @click.stop="selectRecommend(recommend)">{{recommend.enterpriseName}}</div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import {mapState} from 'vuex'
 import { CheckIcon } from 'vux'
 import BScroll from 'better-scroll'
 import { getRect } from '../../src/assets/js/dom'
@@ -106,9 +107,16 @@ export default {
   components: { CheckIcon },
   data () {
     return {
+
+      invoiceType: 1, // 开票类型
+      templateCode: '',
+      invoiceReqSerialNo: '',
+      taxpayerNumstr: '',
+
+      merchantName: '',
       amount: 0,
 
-      companyTitle: false,
+      companyTitle: true,
       personalTitle: false,
       titleName: '',
       identifyNum: '',
@@ -118,12 +126,10 @@ export default {
       bankName: '',
       bankAccount: '',
 
+      name: '',
       mobile: '',
       email: '',
 
-      orderInfo: {
-        merchantName: '上海河马生鲜有限公司'
-      },
       recommendList: [
       ],
 
@@ -135,8 +141,11 @@ export default {
     }
   },
   computed: {
+    ...mapState({
+      userInfo: state => state.user.user_info
+    }),
     commitDisabled () {
-      return this.titleName !== '' && this.identifyNum !== ''
+      return this.titleName !== '' && (this.personalTitle || this.identifyNum !== '')
     }
   },
   watch: {
@@ -165,39 +174,119 @@ export default {
         }, 20)
       },
       deep: true
+    },
+    companyTitle: {
+      handler (newValue, oldValue) {
+        this.personalTitle = !newValue
+      }
+    },
+    personalTitle: {
+      handler (newValue, oldValue) {
+        this.companyTitle = !newValue
+      }
     }
   },
+  mounted () {
+    let queryData = this.$route.query
+
+    if (typeof queryData.templateCode === 'string' && queryData.templateCode !== '') {
+      this.invoiceType = 1
+      this.templateCode = queryData.templateCode
+    } else if (typeof queryData.invoiceReqSerialNo === 'string' && queryData.invoiceReqSerialNo !== '') {
+      this.invoiceType = 2
+      this.invoiceReqSerialNo = queryData.invoiceReqSerialNo
+    } else if (typeof queryData.taxpayerNumstr === 'string' && queryData.taxpayerNumstr !== '') {
+      this.invoiceType = 3
+      this.taxpayerNumstr = queryData.taxpayerNumstr
+    } else {
+      this.$router.push('/error/出错啦/二维码信息不正确')
+    }
+
+    // 验证
+    // this.verifyTemplate()
+  },
   methods: {
+    verifyTemplate () {
+      if (this.invoiceType === 2) {
+        return this.getTemplate()
+      }
+      let verifyData = {}
+      if (this.invoiceType === 1) {
+        verifyData.templateCode = this.templateCode
+      } else if (this.invoiceType === 3) {
+        verifyData.taxpayerNumstr = this.taxpayerNumstr
+      }
+
+      this.$vux.loading.show({text: ''})
+      this.$http.post(this.API.verifyTemplate[this.invoiceType], verifyData).then(res => {
+        this.$vux.loading.hide()
+        if (res.return_code !== '0000') {
+          this.$router.replace('/error/出错啦/' + res.return_message)
+          return false
+        }
+        return this.getTemplate()
+      })
+    },
+    getTemplate () {
+      let postData = {}
+      if (this.invoiceType === 1) {
+        postData.templateCode = this.templateCode
+      } else if (this.invoiceType === 2) {
+        postData.invoiceReqSerialNo = this.invoiceReqSerialNo
+      } else if (this.invoiceType === 3) {
+        postData.taxpayerNumstr = this.taxpayerNumstr
+      }
+
+      this.$vux.loading.show({text: ''})
+      this.$http.post(this.API.getTemplate[this.invoiceType], postData).then(res => {
+        this.$vux.loading.hide()
+        if (res.return_code !== '0000') {
+          this.$router.replace('/error/出错啦/' + res.return_message)
+          return false
+        }
+        this.merchantName = res.data.seller.enterpriseName
+        if (res.data.info.invoiceAmount) {
+          this.amount = res.data.info.invoiceAmount
+        }
+        return true
+      })
+    },
     getRecommends (searchKey) {
-      setTimeout(() => {
-        this.recommendList = [
-          {
-            name: '易通金服支付有限公司1'
-          },
-          {
-            name: '易通金服支付有限公司2'
-          },
-          {
-            name: '易通金服支付有限公司3'
-          },
-          {
-            name: '易通金服支付有限公司1'
-          },
-          {
-            name: '易通金服支付有限公司2'
-          },
-          {
-            name: '易通金服支付有限公司3'
-          }
-        ]
-      }, 1000)
-      this.$nextTick(() => {
-        if (!this.scroll) {
-          this.initScroll()
-        } else {
-          this.scroll.refresh()
+      this.$http.post(this.API.getTitleInfo, {data: searchKey}).then(res => {
+        if (res.return_code === '0000') {
+          this.recommendList = res.data.info
+          this.$nextTick(() => {
+            if (!this.scroll) {
+              this.initScroll()
+            } else {
+              this.scroll.refresh()
+            }
+          })
         }
       })
+
+      // setTimeout(() => {
+      //   this.recommendList = [
+      //     {
+      //       name: '易通金服支付有限公司1'
+      //     },
+      //     {
+      //       name: '易通金服支付有限公司2'
+      //     },
+      //     {
+      //       name: '易通金服支付有限公司3'
+      //     },
+      //     {
+      //       name: '易通金服支付有限公司1'
+      //     },
+      //     {
+      //       name: '易通金服支付有限公司2'
+      //     },
+      //     {
+      //       name: '易通金服支付有限公司3'
+      //     }
+      //   ]
+      // }, 1000)
     },
     getTitleInputPosY () {
       this.recommendOffsetY = parseInt(this.$refs.titleInfo.offsetTop) + 100
@@ -236,17 +325,53 @@ export default {
     destroyed () {
       this.$refs.scroll && this.$refs.scroll.destroy()
     },
-    selectRecommend (titleName) {
+    selectRecommend (titleInfo) {
       this.clickRecommendItem = true
-      this.titleName = titleName
+      this.titleName = titleInfo.enterpriseName
+      this.identifyNum = titleInfo.taxpayerNum
 
       this.destroyed()
     },
     confirmEdit () {
-      if (this.titleName !== '' && this.identifyNum !== '') {
-        this.buttonTxt = '提交'
-        this.editing = false
+      if (this.titleName !== '' && (this.personalTitle || this.identifyNum !== '')) {
+        if (this.editing) {
+          this.buttonTxt = '提交'
+          this.editing = false
+          return false
+        }
+        let postData = {}
+        if (this.invoiceType === 1) {
+          postData.templateCode = this.templateCode
+        } else if (this.invoiceType === 2) {
+          postData.invoiceReqSerialNo = this.invoiceReqSerialNo
+        } else if (this.invoiceType === 3) {
+          postData.taxpayerNumstr = this.taxpayerNumstr
+        }
+
+        postData.buyerName = this.titleName
+        postData.buyerTaxpayerNum = this.identifyNum
+        postData.buyerAddress = this.companyAddr
+        postData.buyerTel = this.companyContact
+        postData.buyerBankName = this.bankName
+        postData.buyerBankAccount = this.bankAccount
+        postData.takerName = this.name
+        postData.takerTel = this.mobile
+        postData.takerEmail = this.email
+        postData.openid = this.userInfo.openid
+
+        this.$vux.loading.show({text: ''})
+        this.$http.post(this.API.setBuyerInfo[this.invoiceType], postData).then(res => {
+          this.$vux.loading.hide()
+          if (res.return_code === '0000') {
+            this.$router.push('/submit_message/' + this.merchantName + '/' + this.amount)
+            return true
+          } else {
+            this.$router.push('/error/申请失败/' + res.return_message)
+            return false
+          }
+        })
       }
+      return false
     }
   }
 }
@@ -311,7 +436,7 @@ export default {
     padding: 28px;
     background-color: #FFFFFF;
     .merchant-area {
-      height: 172px;
+      /*height: 172px;*/
       border-bottom: 1px #666666 dashed;
       .merchant-info {
         justify-content: space-between;
@@ -350,6 +475,12 @@ export default {
           color:#C4C4C4;
           font-size: 30px;
           text-align: left;
+        }
+        .input-area {
+          span {
+            font-size: 36px;
+            color: #000000;
+          }
         }
       }
     }

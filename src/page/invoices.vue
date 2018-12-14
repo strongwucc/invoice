@@ -51,9 +51,9 @@
                           <div
                             :class="{
                         type:true,
-                        success:invoice.typeKey === 'success',
-                        pending:invoice.typeKey === 'pending',
-                        fail:invoice.typeKey === 'fail',
+                        success:invoice.typeKey === '0000',
+                        pending:invoice.typeKey === '7777',
+                        fail:invoice.typeKey === '9999',
                         }"
                           >
                             {{invoice.typeValue}}
@@ -89,6 +89,7 @@
 </template>
 
 <script>
+import {mapState} from 'vuex'
 import BScroll from 'better-scroll'
 import { getRect } from '../../src/assets/js/dom'
 import { Swipeout, SwipeoutItem } from 'vux'
@@ -101,18 +102,19 @@ export default {
     return {
       searchKey: '',
       selectedType: { // 选中的发票类型
-        key: 'all',
+        key: '',
         value: '全部发票'
       },
       selectedDate: '',
       isShowTypes: false,
       types: [ // 发票类型
-        {key: 'all', value: '全部发票'},
-        {key: 'pending', value: '开票申请中'},
-        {key: 'success', value: '开票成功'},
-        {key: 'fail', value: '开票失败'}
+        {key: '', value: '全部发票'},
+        {key: '7777', value: '开票申请中'},
+        {key: '0000', value: '开票成功'},
+        {key: '9999', value: '开票失败'}
       ],
-      page: 0, // 当前页数
+      page: 1, // 当前页数
+      pageSize: 10,
       invoiceList: [ // 发票列表数据
       ],
       startY: 0,
@@ -124,6 +126,9 @@ export default {
     }
   },
   computed: {
+    ...mapState({
+      userInfo: state => state.user.user_info
+    }),
     pullUpTxt () {
       return this.pullUpDirty ? '加载更多' : '已无更多'
     },
@@ -156,6 +161,28 @@ export default {
       this.loading = true
       setTimeout(() => {
         this.loading = false
+        // let postData = {
+        //   openid: this.userInfo.openid,
+        //   page: this.page,
+        //   size: this.pageSize
+        // }
+        //
+        // if (this.searchKey !== '') {
+        //   postData.keyword = this.searchKey
+        // }
+        //
+        // if (this.selectedDate !== '') {
+        //   postData.time = this.selectedDate
+        // }
+        //
+        // if (this.selectedType.key !== '') {
+        //   postData.selectedType = this.selectedType.key
+        // }
+        //
+        // this.$http.post(this.API.queryInvoiceList, postData).then(res => {
+        //   this.loading = false
+        //   this.invoiceList = res.invoiceList
+        // })
         this.invoiceList = this.invoiceList.concat([
           {
             date: '2018年11月',
@@ -239,10 +266,6 @@ export default {
           }
         })
       }, 2000)
-      // this.$http.post(this.API.invoices, {}).then(res => {
-      //   this.loading = false
-      //   this.invoiceList = res.invoiceList
-      // })
     },
     // 初始化滚动
     initScroll () {

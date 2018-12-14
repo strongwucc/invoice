@@ -1,20 +1,15 @@
 <template>
   <div class="invoice-page">
-    <div class="invoice-image" v-if="invoiceData.typeKey && invoiceData.typeKey === 'success'">
-      <!--<img :src="invoiceData.imageUrl">-->
-      <img src="../../src/assets/img/invoice.png">
-    </div>
-    <div class="notice-area" v-if="invoiceData.typeKey && invoiceData.typeKey !== 'success'">
-      <div class="company">{{invoiceData.companyName}}</div>
-      <div class="amount">{{invoiceData.amount}}</div>
+    <div class="notice-area">
+      <div class="company">{{merchantName}}</div>
+      <div class="amount" v-if="amount > 0">{{amount}}</div>
       <div class="line"></div>
       <div class="icon">
-        <img v-if="invoiceData.typeKey === 'pending'" src="../../src/assets/img/ic_success@2x.png"/>
-        <img v-else src="../../src/assets/img/ic_fail@2x.png"/>
+        <img src="../../src/assets/img/ic_success@2x.png"/>
       </div>
-      <div class="typeValue">{{invoiceData.typeValue}}</div>
-      <div class="notice">{{invoiceData.notice}}</div>
-      <div class="dateTime">申请时间：{{invoiceData.dateTime}}</div>
+      <div class="typeValue">开票申请已提交</div>
+      <div class="notice">系统将自动为您开具发票</div>
+      <div class="dateTime">再次扫描发票二维码可查看发票信息</div>
     </div>
     <div class="action-area" @click="myInvoices">
       查看我的票夹
@@ -27,103 +22,15 @@ export default {
   name: 'submit_message',
   data () {
     return {
-      invoiceData: {
-        invoiceId: 0,
-        companyName: '',
-        typeKey: '',
-        typeValue: '',
-        notice: '',
-        amount: '',
-        payment: '',
-        dateTime: '',
-        imageUrl: '',
-        pdfUrl: '',
-        merContact: ''
-      }
+      merchantName: '',
+      amount: 0
     }
   },
   mounted () {
-    this.invoiceData.invoiceId = this.$route.params.invoiceId
-    this.getInvoiceDetail()
+    this.merchantName = this.$route.params.merchantName
+    this.amount = this.$route.params.merchantName
   },
   methods: {
-    getInvoiceDetail () {
-      this.$vux.loading.show({text: ''})
-      setTimeout(() => {
-        this.$vux.loading.hide()
-        let data = {
-          companyName: '深圳家乐福有限公司',
-          typeKey: 'success',
-          typeValue: '开票处理中',
-          notice: '开票处理中提示信息',
-          amount: '￥235',
-          payment: '上海易通金服有限公司',
-          dateTime: '2018.04.05',
-          imageUrl: '../../src/assets/img/invoice.png',
-          pdfUrl: '',
-          merContact: '8765678765'
-        }
-        switch (this.invoiceData.invoiceId) {
-          case '1':
-            data = {
-              companyName: '深圳家乐福有限公司',
-              typeKey: 'success',
-              typeValue: '开票处理中',
-              notice: '开票处理中提示信息',
-              amount: '￥235',
-              payment: '上海易通金服有限公司',
-              dateTime: '2018.04.05',
-              imageUrl: '../../src/assets/img/invoice.png',
-              pdfUrl: '',
-              merContact: '8765678765'
-            }
-            break
-          case '2':
-            data = {
-              companyName: '深圳家乐福有限公司',
-              typeKey: 'pending',
-              typeValue: '开票处理中',
-              notice: '开票处理中提示信息',
-              amount: '￥235',
-              payment: '上海易通金服有限公司',
-              dateTime: '2018.04.05',
-              imageUrl: '../../src/assets/img/invoice.png',
-              pdfUrl: '',
-              merContact: '8765678765'
-            }
-            break
-          case '3':
-            data = {
-              companyName: '深圳家乐福有限公司',
-              typeKey: 'fail',
-              typeValue: '开票处理中',
-              notice: '开票处理中提示信息',
-              amount: '￥235',
-              payment: '上海易通金服有限公司',
-              dateTime: '2018.04.05',
-              imageUrl: '../../src/assets/img/invoice.png',
-              pdfUrl: '',
-              merContact: '8765678765'
-            }
-            break
-          default:
-            break
-        }
-
-        this.invoiceData = Object.assign({}, this.invoiceData, data)
-      }, 2000)
-
-      // this.$http.post(this.API.invoice, {}).then(res => {
-      //   this.loading = false
-      //   this.invoiceData = res.invoiceData
-      // })
-    },
-    share () {
-      console.log('share...')
-    },
-    download () {
-      console.log('downloading...')
-    },
     myInvoices () {
       this.$router.push('/invoices')
     }
@@ -201,6 +108,7 @@ export default {
       }
       .dateTime {
         height: 68px;
+        width: 416px;
         font-size: 26px;
         bottom: 42px;
         color: #999999;

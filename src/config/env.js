@@ -8,16 +8,20 @@
  */
 let rootUrl = ''
 let baseUrl = ''
+let oauthUrl = 'http://wxgw.yklsh.etonepay.com/authorize?etone_id=yt6eb45ebc33750e02&scope=snsapi_base&state=STATE'
+let baseRedirectUrl = 'http://' + window.location.host + '/#'
 
 if (process.env.NODE_ENV === 'development') {
-    rootUrl = ''
-    baseUrl = ''
+  rootUrl = 'http://ceshi4.sdykt.com.cn:1280'
+  baseUrl = rootUrl + '/invoice-api/'
 } else if (process.env.NODE_ENV === 'production') {
-    rootUrl = ''
-    baseUrl = ''
+  rootUrl = 'http://ceshi4.sdykt.com.cn:1280'
+  baseUrl = rootUrl + '/invoice-api/'
 }
 
 export {
-    rootUrl,
-    baseUrl
+  rootUrl,
+  baseUrl,
+  oauthUrl,
+  baseRedirectUrl
 }

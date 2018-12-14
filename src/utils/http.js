@@ -1,52 +1,65 @@
 import axios from 'axios'
 import { baseUrl } from '../config/env'
-axios.defaults.withCredentials=true
+axios.defaults.withCredentials = false
 
 export default class http {
-    constructor(store, api) {
-        var base_api = baseUrl
-        this.baseApi = base_api
-        this.api = api //全部接口
-        if(store){
-            this.store = store
-            this.userAuth()
-        }
+  constructor (store, api) {
+    var baseApi = baseUrl
+    this.baseApi = baseApi
+    this.api = api // 全部接口
+    if (store) {
+      this.store = store
+      this.userAuth()
     }
-    get(url, data, isNeedBaseUrl) {
-        var options = {
-            url: !isNeedBaseUrl ? this.baseApi + url : url,
-            data: data || {},
-            method: 'get',
-        }
-        this.request(options)
+  }
+  get (url, data, isNeedBaseUrl) {
+    var options = {
+      url: !isNeedBaseUrl ? this.baseApi + url : url,
+      data: data || {},
+      method: 'get'
     }
-    post(method, data, query) {
-        var options = {
-            url: query ? this.baseApi + query : this.baseApi,
-            data: {method: method, params: data},
-            method: 'post',
-        }
-        return this.request(options)
+    this.request(options)
+  }
+  post (url, data, query) {
+    var postUrl = this.baseApi
+    if (url) {
+      postUrl += url
     }
-    all(array) {
-        var promiseAll = Promise.all(array)
-        return promiseAll
+    if (query) {
+      postUrl += query
     }
-    request(options) {
-        var promise = new Promise((resolve) => {
-            axios(options)
-                .then((result) => {
-                    resolve(result.data)
-                })
+    var options = {
+      url: postUrl,
+      data: data,
+      method: 'post'
+    }
+    return this.request(options)
+  }
+  all (array) {
+    var promiseAll = Promise.all(array)
+    return promiseAll
+  }
+  request (options) {
+    var promise = new Promise((resolve) => {
+      axios(options)
+        .then((result) => {
+          console.log(result)
+          if (typeof result.data.return_code === 'undefined') {
+            resolve({return_code: '5000', return_message: '系统出错啦'})
+          } else {
+            resolve(result.data)
+          }
         })
-        return promise
-    }
-    userAuth() { //会员登录认证
-        axios.interceptors.response.use(response => {
-            return response
+        .catch((error) => {
+          console.log(error)
+          resolve({return_code: '6000', return_message: '网络出错啦'})
         })
-    }
+    })
+    return promise
+  }
+  userAuth () { // 会员登录认证
+    axios.interceptors.response.use(response => {
+      return response
+    })
+  }
 }
-
-
-
