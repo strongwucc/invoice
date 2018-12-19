@@ -78,5 +78,29 @@ export default{
     } else {
       return false
     }
+  },
+
+  get_byte_len: function (val) {
+    var len = 0
+    for (var i = 0; i < val.length; i++) {
+      var length = val.charCodeAt(i)
+      if (length >= 0 && length <= 128) {
+        len += 1
+      } else {
+        len += 2
+      }
+    }
+    return len
+  },
+
+  check_chinese: function (val) {
+    var han = /^[\u4e00-\u9fa5]+$/
+    if (val === '') {
+      return false
+    };
+    if (!han.test(val)) {
+      return false
+    };
+    return true
   }
 }

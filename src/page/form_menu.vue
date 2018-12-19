@@ -21,7 +21,8 @@
             <check-icon :value.sync="companyTitle">企业发票</check-icon>
             <check-icon :value.sync="personalTitle">个人发票</check-icon>
           </template>
-          <span v-else>{{companyTitle}}</span>
+          <span v-else-if="companyTitle">企业发票</span>
+          <span v-else>个人发票</span>
         </div>
       </div>
       <div class="input-item title-info" ref="titleInfo" :class="{edited: !editing}">
@@ -102,6 +103,7 @@ import {mapState} from 'vuex'
 import { CheckIcon } from 'vux'
 import BScroll from 'better-scroll'
 import { getRect } from '../../src/assets/js/dom'
+import Valid from '../utils/valid'
 export default {
   name: 'form_menu',
   components: { CheckIcon },
@@ -203,7 +205,7 @@ export default {
     }
 
     // 验证
-    // this.verifyTemplate()
+    this.verifyTemplate()
   },
   methods: {
     verifyTemplate () {
@@ -228,33 +230,43 @@ export default {
       })
     },
     getTemplate () {
-      let postData = {}
+      let getData = ''
       if (this.invoiceType === 1) {
-        postData.templateCode = this.templateCode
+        getData += '?templateCode=' + this.templateCode
       } else if (this.invoiceType === 2) {
-        postData.invoiceReqSerialNo = this.invoiceReqSerialNo
+        getData += '?invoiceReqSerialNo=' + this.invoiceReqSerialNo
       } else if (this.invoiceType === 3) {
-        postData.taxpayerNumstr = this.taxpayerNumstr
+        getData += '?taxpayerNumstr=' + this.taxpayerNumstr
       }
 
       this.$vux.loading.show({text: ''})
-      this.$http.post(this.API.getTemplate[this.invoiceType], postData).then(res => {
+      this.$http.get(this.API.getTemplate[this.invoiceType] + getData).then(res => {
         this.$vux.loading.hide()
         if (res.return_code !== '0000') {
           this.$router.replace('/error/出错啦/' + res.return_message)
           return false
         }
-        this.merchantName = res.data.seller.enterpriseName
-        if (res.data.info.invoiceAmount) {
-          this.amount = res.data.info.invoiceAmount
+        let sellerData = res.data.seller
+        let infoData = res.data.info
+        this.merchantName = sellerData.enterpriseName
+        if (infoData.invoiceAmount) {
+          this.amount = infoData.invoiceAmount
         }
         return true
       })
     },
     getRecommends (searchKey) {
-      this.$http.post(this.API.getTitleInfo, {data: searchKey}).then(res => {
+      if (Valid.check_chinese(searchKey) === false) {
+        return false
+      }
+
+      if (Valid.get_byte_len(searchKey) < 4) {
+        return false
+      }
+
+      this.$http.get(this.API.getTitleInfo + '?data=' + searchKey).then(res => {
         if (res.return_code === '0000') {
-          this.recommendList = res.data.info
+          this.recommendList = JSON.parse(res.data.info)
           this.$nextTick(() => {
             if (!this.scroll) {
               this.initScroll()
@@ -441,7 +453,7 @@ export default {
       .merchant-info {
         justify-content: space-between;
         .input-label {
-          width: 56px;
+          width: 76px;
         }
         .input-area {
           color: #000000;

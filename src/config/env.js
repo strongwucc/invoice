@@ -14,9 +14,11 @@ let baseRedirectUrl = 'http://' + window.location.host + '/#'
 if (process.env.NODE_ENV === 'development') {
   rootUrl = 'http://ceshi4.sdykt.com.cn:1280'
   baseUrl = rootUrl + '/invoice-api/'
+  baseRedirectUrl = 'http://' + window.location.host + '/#'
 } else if (process.env.NODE_ENV === 'production') {
   rootUrl = 'http://ceshi4.sdykt.com.cn:1280'
   baseUrl = rootUrl + '/invoice-api/'
+  baseRedirectUrl = 'http://' + window.location.host + '/invoice/#'
 }
 
 export {

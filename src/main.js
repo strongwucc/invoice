@@ -12,7 +12,10 @@ import FastClick from 'fastclick'
 import NP from 'number-precision'
 import './assets/css/reset.css'
 import './assets/css/vux-reset.css'
-import { DatetimePlugin, ConfirmPlugin, LoadingPlugin } from 'vux'
+import { DatetimePlugin, ConfirmPlugin, LoadingPlugin, ToastPlugin } from 'vux'
+
+import VConsole from 'vconsole'
+var vConsole = new VConsole()
 
 Vue.config.productionTip = false
 
@@ -41,6 +44,7 @@ if ('addEventListener' in document) {
 Vue.use(DatetimePlugin)
 Vue.use(ConfirmPlugin)
 Vue.use(LoadingPlugin)
+Vue.use(ToastPlugin)
 
 Vue.prototype.$http = new Http(store, api)
 Vue.prototype.API = api

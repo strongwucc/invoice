@@ -24,7 +24,7 @@ export default {
       this.code = queryData.code
       // 获取用户 openid 并保存
       this.$vux.loading.show({text: ''})
-      this.$http.post(this.API.auth.getOpenid, {code: this.code}).then(res => {
+      this.$http.get(this.API.auth.getOpenid + '?code=' + this.code).then(res => {
         console.log(res)
         this.$vux.loading.hide()
         if (res.return_code === '0000') {

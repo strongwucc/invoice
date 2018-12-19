@@ -64,7 +64,7 @@ export default new Router({
       name: 'show',
       component: Show,
       meta: {
-        auth: 1,
+        auth: 0,
         title: '发票'
       }
     },

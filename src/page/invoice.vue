@@ -3,6 +3,7 @@
     <div class="invoice-image" v-if="info.status && info.status === '0000'">
       <!--<img :src="info.imageUrl">-->
       <img :src="info.invoiceImg">
+      <span class="notice"></span>
     </div>
     <div class="notice-area" v-if="info.status && info.status !== '0000'">
       <div class="company">{{info.enterpriseName}}</div>
@@ -14,18 +15,18 @@
       </div>
       <div class="typeValue" v-if="info.status === '7777'">开票申请已提交</div>
       <div class="typeValue" v-else>开票失败</div>
-      <div class="notice" v-if="info.status === '7777'">{{info.notice}}</div>
-      <div class="notice" v-else>{{info.notice}}</div>
-      <div class="dateTime">申请时间：{{info.dateTime}}</div>
+      <div class="notice" v-if="info.status === '7777'">系统将自动为您开具发票</div>
+      <div class="notice" v-else>失败原因</div>
+      <div class="dateTime">申请时间：{{info.timestamp}}</div>
     </div>
     <div class="share-area" v-if="info.status && info.status === '0000'" @click="share">
       分享给朋友
     </div>
-    <div class="download-area" v-if="info.status && info.status === '0000'" @click.stop="download">
-      下载PDF文件
-    </div>
+    <!--<div class="download-area" v-if="info.status && info.status === '0000'" @click.stop="download">-->
+      <!--下载发票-->
+    <!--</div>-->
     <div class="contact-area" v-if="info.status && info.status !== '0000'">
-      <a :href="'tel:' + info.merContact">联系商家：{{info.merContact}}</a>
+      <a :href="'tel:' + info.sellerTel">联系商家：{{info.sellerTel}}</a>
     </div>
   </div>
 </template>
@@ -55,7 +56,7 @@ export default {
   methods: {
     getInvoiceDetail () {
       this.$vux.loading.show({text: ''})
-      this.$http.post(this.API.getInvoiceInfo, {invoiceReqSerialNo: this.invoiceReqSerialNo}).then(res => {
+      this.$http.get(this.API.getInvoiceInfo + '?invoiceReqSerialNo=' + this.invoiceReqSerialNo).then(res => {
         this.$vux.loading.hide()
         if (res.return_code === '0000') {
           this.info = res.data.info
@@ -69,6 +70,7 @@ export default {
     },
     download () {
       console.log('downloading...')
+      this.saveFile(this.info.invoiceImg, 'invoice.png')
     },
     saveFile (data, filename) {
       const saveLink = document.createElementNS('http://www.w3.org/1999/xhtml', 'a')
@@ -92,6 +94,7 @@ export default {
       height: 700px;
       background-color: #FFFFFF;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       img {
@@ -100,6 +103,11 @@ export default {
         -moz-box-shadow:10px 10px 40px #E8E8E8,10px -10px 40px #E8E8E8,-10px 10px 40px #E8E8E8,-10px -10px 40px #E8E8E8;
         -webkit-box-shadow:10px 10px 40px #E8E8E8,10px -10px 40px #E8E8E8,-10px 10px 40px #E8E8E8,-10px -10px 40px #E8E8E8;
         box-shadow:10px 10px 40px #E8E8E8,10px -10px 40px #E8E8E8,-10px 10px 40px #E8E8E8,-10px -10px 40px #E8E8E8;
+      }
+      .notice {
+        margin-top: 40px;
+        font-size: 28px;
+        color: #7e8c8d;
       }
     }
     .notice-area {
@@ -171,7 +179,8 @@ export default {
       transform: translate(-50%);
     }
     .share-area {
-      bottom: 161px;
+      /*bottom: 161px;*/
+      bottom: 53px;
     }
     .download-area {
       bottom: 53px;

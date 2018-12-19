@@ -1,6 +1,6 @@
 export default {
   auth: {
-    getOpenid: ''
+    getOpenid: 'getOpenId'
   },
   verifyTemplate: {
     1: 'getIskjfpbytemplateCode',
@@ -18,7 +18,7 @@ export default {
   },
   getTitleInfo: 'getTitleInfo',
   getInvoiceInfo: 'getInvoiceInfo',
-  queryInvoiceList: 'queryInvoiceList', // 获取发票列表（分页）
-  delInvoice: '', // 删除发票
+  queryInvoiceList: 'queryMyInvoiceList', // 获取发票列表（分页）
+  deleteMyInvoice: 'deleteMyInvoice', // 删除发票
   invoice: '' // 发票明细
 }

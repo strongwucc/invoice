@@ -5,6 +5,8 @@ import Valid from '../../utils/valid'
 export default {
   get_user_data ({commit, state}, router) {
     // var http = new Http();
+    // localStorage.removeItem('user_data')
+    // localStorage.removeItem('user_is_login')
     var userData = localStorage.getItem('user_data')
     var isLogin = localStorage.getItem('user_is_login')
 

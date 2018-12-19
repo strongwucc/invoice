@@ -18,7 +18,7 @@ export default class http {
       data: data || {},
       method: 'get'
     }
-    this.request(options)
+    return this.request(options)
   }
   post (url, data, query) {
     var postUrl = this.baseApi

@@ -15,10 +15,17 @@
   font-size: 34px !important;
   line-height: 90px !important;
 }
-.weui-toast {
+.vux-loading .weui-toast {
   width: 100px !important;
   height: 100px !important;
-  transform: translate(100%) !important;
+  /*transform: translate(100%) !important;*/
+}
+
+.weui-toast_text .weui-toast__content {
+  padding-top: 20px !important;
+  padding-bottom: 20px !important;
+  border-radius: 10px !important;
+  font-size: 28px !important;
 }
 
 .vux-datetime-cancel, .vux-datetime-confirm {

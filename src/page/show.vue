@@ -1,24 +1,31 @@
 <template>
   <div class="invoice-page" >
     <div class="invoice-image">
-      <img :src="pdfUrl">
+      <img :src="imgUrl">
     </div>
-    <div class="my-invoices" @click.stop="myInvoices">
+    <div class="my-invoices" :class="{'has-brother': isWx}" @click.stop="myInvoices">
       查看我的票夹
     </div>
-    <div class="download-area" @click.stop="download">
-      下载PDF文件
+    <div class="download-area" v-if="!isWx" @click.stop="download">
+      下载发票
     </div>
   </div>
 </template>
 
 <script>
+import Valid from '../utils/valid'
 export default {
   name: 'show',
   data () {
     return {
       invoiceReqSerialNo: '',
-      pdfUrl: ''
+      pdfUrl: '',
+      imgUrl: ''
+    }
+  },
+  computed: {
+    isWx () {
+      return Valid.check_weixin()
     }
   },
   mounted () {
@@ -28,10 +35,11 @@ export default {
   methods: {
     getInvoiceDetail () {
       this.$vux.loading.show({text: ''})
-      this.$http.post(this.API.getInvoiceInfo, {invoiceReqSerialNo: this.invoiceReqSerialNo}).then(res => {
+      this.$http.get(this.API.getInvoiceInfo + '?invoiceReqSerialNo=' + this.invoiceReqSerialNo).then(res => {
         this.$vux.loading.hide()
         if (res.return_code === '0000') {
           this.pdfUrl = res.data.info.invoicePdf
+          this.imgUrl = res.data.info.invoiceImg
         } else {
           this.$router.replace('/error/出错啦/' + res.return_message)
         }
@@ -47,6 +55,7 @@ export default {
     },
     download () {
       console.log('downloading...')
+      this.saveFile(this.imgUrl, 'invoice.png')
     },
     saveFile (data, filename) {
       const saveLink = document.createElementNS('http://www.w3.org/1999/xhtml', 'a')
@@ -58,20 +67,21 @@ export default {
       saveLink.dispatchEvent(event)
     },
     myInvoices () {
-      var ua = window.navigator.userAgent.toLowerCase()
-      if (ua.match(/MicroMessenger/i) === 'micromessenger') {
-        this.$router.push('/invoices')
-      } else {
-        var vm = this
-        this.$vux.confirm.show({
-          title: '提示',
-          content: '在"微信"中打开链接吗',
-          dialogTransition: 'vux-dialog',
-          onConfirm () {
-            console.log('要在微信中打开...')
-          }
-        })
-      }
+      this.$router.push('/invoices')
+      // var ua = window.navigator.userAgent.toLowerCase()
+      // if (ua.match(/MicroMessenger/i) === 'micromessenger') {
+      //   this.$router.push('/invoices')
+      // } else {
+      //   var vm = this
+      //   this.$vux.confirm.show({
+      //     title: '提示',
+      //     content: '在"微信"中打开链接吗',
+      //     dialogTransition: 'vux-dialog',
+      //     onConfirm () {
+      //       console.log('要在微信中打开...')
+      //     }
+      //   })
+      // }
     }
   }
 }
@@ -168,6 +178,9 @@ export default {
     }
     .my-invoices {
       bottom: 161px;
+    }
+    .has-brother {
+      bottom: 53px;
     }
     .download-area {
       bottom: 53px;

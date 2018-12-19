@@ -2,13 +2,13 @@
   <div class="invoices-page">
     <div class="search-area">
       <div class="input-area">
-        <div :class="{'search-input': true, long: selectedType.key === 'all' && selectedDate === ''}">
+        <div :class="{'search-input': true, long: searchKey === '' && selectedType.key === '' && selectedDate === ''}">
           <img class="search-icon" src="../assets/img/ic_search@2x.png"/>
-          <input v-model="searchKey" placeholder="收款方/付款方名" :class="{long: selectedType.key === 'all' && selectedDate === ''}" />
+          <input v-model="searchKey" placeholder="收款方/付款方名" :class="{long: searchKey === '' && selectedType.key === '' && selectedDate === ''}" />
           <img v-show="searchKey" class="search-clear" src="../assets/img/ic_del@2x.png" @click.stop="clearInput"/>
           <span class="search-clear" v-show="!searchKey"></span>
         </div>
-        <div class="search-cancel" v-if="selectedType.key !== 'all' || selectedDate !== ''" @click.stop="refreshList">
+        <div class="search-cancel" v-if="searchKey !== '' || selectedType.key !== '' || selectedDate !== ''" @click.stop="refreshList">
           取消
         </div>
       </div>
@@ -36,32 +36,34 @@
       <div class="wrapper" ref="wrapper" v-if="invoiceList.length > 0">
         <ul class="content">
           <li class="content-item" v-for="(invoiceData, invoiceDataIndex) in invoiceList" :key="invoiceDataIndex">
-            <div class="date">{{invoiceData.date}}</div>
+            <div class="date">{{invoiceData.time}}</div>
             <swipeout class="list">
               <!--<ul>-->
                 <!--<li v-for="(invoice, invoiceIndex) in invoiceData.list" :key="invoiceIndex">-->
                   <!--<swipeout>-->
-                    <swipeout-item v-for="(invoice, invoiceIndex) in invoiceData.list" :key="invoiceIndex" @on-close="handleEvents('on-close')" @on-open="handleEvents('on-open')" transition-mode="follow">
+                    <swipeout-item v-for="(invoice, invoiceIndex) in invoiceData.invoiceList" :key="invoiceIndex" @on-close="handleEvents('on-close')" @on-open="handleEvents('on-open')" transition-mode="follow">
                       <div slot="right-menu">
-                        <swipeout-button :primaryKey="invoice.invoiceId" @buttonClicked="onButtonClick" :width="158">删除</swipeout-button>
+                        <swipeout-button :primaryKey="invoice.invoiceReqSerialNo" @buttonClicked="onButtonClick" :width="158">删除</swipeout-button>
                       </div>
-                      <div slot="content" class="invoice-content" @click.stop="showDetail(invoice.invoiceId)">
+                      <div slot="content" class="invoice-content" @click.stop="showDetail(invoice.invoiceReqSerialNo)">
                         <div class="company">
-                          <div class="name">{{invoice.companyName}}</div>
+                          <div class="name">{{invoice.buyerName|longStrFormat(14)}}</div>
                           <div
                             :class="{
                         type:true,
-                        success:invoice.typeKey === '0000',
-                        pending:invoice.typeKey === '7777',
-                        fail:invoice.typeKey === '9999',
+                        success:invoice.status === '0000',
+                        pending:invoice.status === '7777',
+                        fail:invoice.status === '9999',
                         }"
                           >
-                            {{invoice.typeValue}}
+                            <template v-if="invoice.status === '0000'">开票成功</template>
+                            <template v-else-if="invoice.status === '7777'">开票申请中</template>
+                            <template v-else-if="invoice.status === '9999'">开票失败</template>
                           </div>
                         </div>
-                        <div class="amount">发票金额：{{invoice.amount}}</div>
-                        <div class="payment">{{invoice.payment}}</div>
-                        <div class="date-time">{{invoice.dateTime}}</div>
+                        <div class="amount">发票金额：{{invoice.totalAmount}}</div>
+                        <div class="payment">付款方：{{invoice.enterpriseName}}</div>
+                        <div class="date-time">申请时间：{{invoice.timestamp}}</div>
                       </div>
                     </swipeout-item>
                   <!--</swipeout>-->
@@ -69,21 +71,30 @@
               <!--</ul>-->
             </swipeout>
           </li>
+          <div class="pullup-wrapper">
+            <div class="before-trigger" v-if="!loading && !isPullUpLoad">
+              <span>{{pullUpTxt}}</span>
+            </div>
+            <div class="after-trigger" v-if="loading || isPullUpLoad">
+              <loading></loading>
+              <div class="after-trigger-msg">{{refreshTxt}}</div>
+            </div>
+          </div>
         </ul>
       </div>
       <div class="empty" v-if="!loading && invoiceList.length === 0">
         <div class="icon"><img src="../assets/img/img_empty_fapiao@2x.png"/></div>
         <div class="message">暂无发票</div>
       </div>
-      <div class="pullup-wrapper">
-        <div class="before-trigger" v-if="!loading && !isPullUpLoad">
-          <span>{{pullUpTxt}}</span>
-        </div>
-        <div class="after-trigger" v-if="loading || isPullUpLoad">
-          <loading></loading>
-          <div class="after-trigger-msg">{{refreshTxt}}</div>
-        </div>
-      </div>
+      <!--<div class="pullup-wrapper">-->
+        <!--<div class="before-trigger" v-if="!loading && !isPullUpLoad">-->
+          <!--<span>{{pullUpTxt}}</span>-->
+        <!--</div>-->
+        <!--<div class="after-trigger" v-if="loading || isPullUpLoad">-->
+          <!--<loading></loading>-->
+          <!--<div class="after-trigger-msg">{{refreshTxt}}</div>-->
+        <!--</div>-->
+      <!--</div>-->
     </div>
   </div>
 </template>
@@ -94,6 +105,7 @@ import BScroll from 'better-scroll'
 import { getRect } from '../../src/assets/js/dom'
 import { Swipeout, SwipeoutItem } from 'vux'
 import swipeoutButton from '../components/vux/swipeout_button'
+import Valid from '../utils/valid'
 export default {
   name: 'invoices',
   components: { Swipeout, SwipeoutItem, swipeoutButton },
@@ -130,7 +142,7 @@ export default {
       userInfo: state => state.user.user_info
     }),
     pullUpTxt () {
-      return this.pullUpDirty ? '加载更多' : '已无更多'
+      return this.pullUpDirty ? '滑动加载更多' : '已无更多'
     },
     refreshTxt () {
       return '正在加载更多数据'
@@ -142,6 +154,26 @@ export default {
         setTimeout(() => {
           this.forceUpdate()
         }, this.refreshDelay)
+      },
+      deep: true
+    },
+    selectedType: {
+      handler (newValue, oldValue) {
+        this.resetList()
+      },
+      deep: true
+    },
+    selectedDate: {
+      handler (newValue, oldValue) {
+        this.resetList()
+      },
+      deep: true
+    },
+    searchKey: {
+      handler (newValue, oldValue) {
+        if (Valid.check_chinese(newValue) || newValue === '') {
+          this.resetList()
+        }
       },
       deep: true
     }
@@ -158,104 +190,49 @@ export default {
   methods: {
     // 获取发票列表数据
     getInvoiceList () {
+      let postData = {
+        openid: this.userInfo.openid,
+        page: this.page,
+        size: this.pageSize,
+        keyword: '',
+        time: '',
+        status: ''
+      }
+
+      if (this.searchKey !== '') {
+        postData.keyword = this.searchKey
+      }
+
+      if (this.selectedDate !== '') {
+        postData.time = this.selectedDate
+      }
+
+      if (this.selectedType.key !== '') {
+        postData.selectedType = this.selectedType.key
+      }
+
       this.loading = true
-      setTimeout(() => {
+      this.$http.post(this.API.queryInvoiceList, postData).then(res => {
         this.loading = false
-        // let postData = {
-        //   openid: this.userInfo.openid,
-        //   page: this.page,
-        //   size: this.pageSize
-        // }
-        //
-        // if (this.searchKey !== '') {
-        //   postData.keyword = this.searchKey
-        // }
-        //
-        // if (this.selectedDate !== '') {
-        //   postData.time = this.selectedDate
-        // }
-        //
-        // if (this.selectedType.key !== '') {
-        //   postData.selectedType = this.selectedType.key
-        // }
-        //
-        // this.$http.post(this.API.queryInvoiceList, postData).then(res => {
-        //   this.loading = false
-        //   this.invoiceList = res.invoiceList
-        // })
-        this.invoiceList = this.invoiceList.concat([
-          {
-            date: '2018年11月',
-            list: [
-              {
-                invoiceId: 1,
-                companyName: '深圳家乐福有限公司',
-                typeKey: 'fail',
-                typeValue: '开票失败',
-                amount: '￥235',
-                payment: '上海易通金服有限公司',
-                dateTime: '2018.04.05'
-              },
-              {
-                invoiceId: 2,
-                companyName: '深圳家乐福有限公司',
-                typeKey: 'pending',
-                typeValue: '开票处理中',
-                amount: '￥235',
-                payment: '上海易通金服有限公司',
-                dateTime: '2018.04.05'
-              },
-              {
-                invoiceId: 3,
-                companyName: '深圳家乐福有限公司',
-                typeKey: 'success',
-                typeValue: '开票成功',
-                amount: '￥235',
-                payment: '上海易通金服有限公司',
-                dateTime: '2018.04.05'
-              }
-            ]
-          },
-          {
-            date: '2018年11月',
-            list: [
-              {
-                invoiceId: 4,
-                companyName: '深圳家乐福有限公司',
-                typeKey: 'success',
-                typeValue: '开票成功',
-                amount: '￥235',
-                payment: '上海易通金服有限公司',
-                dateTime: '2018.04.05'
-              },
-              {
-                invoiceId: 5,
-                companyName: '深圳家乐福有限公司',
-                typeKey: 'success',
-                typeValue: '开票成功',
-                amount: '￥235',
-                payment: '上海易通金服有限公司',
-                dateTime: '2018.04.05'
-              },
-              {
-                invoiceId: 6,
-                companyName: '深圳家乐福有限公司',
-                typeKey: 'success',
-                typeValue: '开票成功',
-                amount: '￥235',
-                payment: '上海易通金服有限公司',
-                dateTime: '2018.04.05'
-              }
-            ]
+
+        if (res.return_code === '0000') {
+          if (this.page > 1) {
+            this.invoiceList = this.invoiceList.concat(res.data.info)
+          } else {
+            this.invoiceList = res.data.info
           }
-        ])
-        this.page = this.page + 1
-        if (this.page >= 3) {
-          this.pullUpLoad = false
-          this.pullUpDirty = false
-        } else {
-          this.pullUpDirty = true
-          this.pullUpLoad = true
+
+          if (res.data.total < this.pageSize) {
+            // if (this.page === 1) {
+            //   this.destroy()
+            // }
+            this.pullUpLoad = false
+            this.pullUpDirty = false
+          } else {
+            this.pullUpDirty = true
+            this.pullUpLoad = true
+            this.page = this.page + 1
+          }
         }
         // this.pullUpLoad = true // 根据接口返回的数据设置是否滑动刷新，还有数据则设置为 true
         this.$nextTick(() => {
@@ -265,7 +242,86 @@ export default {
             this.scroll.refresh()
           }
         })
-      }, 2000)
+      })
+      // setTimeout(() => {
+      //   this.loading = false
+      //   this.invoiceList = this.invoiceList.concat([
+      //     {
+      //       time: '2018年11月',
+      //       invoiceList: [
+      //         {
+      //           invoiceReqSerialNo: 1,
+      //           buyerName: '深圳家乐福有限公司',
+      //           status: '9999',
+      //           totalAmount: '￥235',
+      //           enterpriseName: '上海易通金服有限公司',
+      //           timestamp: '2018.04.05'
+      //         },
+      //         {
+      //           invoiceReqSerialNo: 2,
+      //           buyerName: '深圳家乐福有限公司',
+      //           status: '9999',
+      //           totalAmount: '￥235',
+      //           enterpriseName: '上海易通金服有限公司',
+      //           timestamp: '2018.04.05'
+      //         },
+      //         {
+      //           invoiceReqSerialNo: 3,
+      //           buyerName: '深圳家乐福有限公司',
+      //           status: '9999',
+      //           totalAmount: '￥235',
+      //           enterpriseName: '上海易通金服有限公司',
+      //           timestamp: '2018.04.05'
+      //         }
+      //       ]
+      //     },
+      //     {
+      //       time: '2018年11月',
+      //       invoiceList: [
+      //         {
+      //           invoiceReqSerialNo: 4,
+      //           buyerName: '深圳家乐福有限公司',
+      //           status: '9999',
+      //           totalAmount: '￥235',
+      //           enterpriseName: '上海易通金服有限公司',
+      //           timestamp: '2018.04.05'
+      //         },
+      //         {
+      //           invoiceReqSerialNo: 5,
+      //           buyerName: '深圳家乐福有限公司',
+      //           status: '9999',
+      //           totalAmount: '￥235',
+      //           enterpriseName: '上海易通金服有限公司',
+      //           timestamp: '2018.04.05'
+      //         },
+      //         {
+      //           invoiceReqSerialNo: 6,
+      //           buyerName: '深圳家乐福有限公司',
+      //           status: '9999',
+      //           totalAmount: '￥235',
+      //           enterpriseName: '上海易通金服有限公司',
+      //           timestamp: '2018.04.05'
+      //         }
+      //       ]
+      //     }
+      //   ])
+      //   if (this.page >= 1) {
+      //     this.pullUpLoad = false
+      //     this.pullUpDirty = false
+      //   } else {
+      //     this.pullUpDirty = true
+      //     this.pullUpLoad = true
+      //     this.page = this.page + 1
+      //   }
+      //   // this.pullUpLoad = true // 根据接口返回的数据设置是否滑动刷新，还有数据则设置为 true
+      //   this.$nextTick(() => {
+      //     if (!this.scroll) {
+      //       this.initScroll()
+      //     } else {
+      //       this.scroll.refresh()
+      //     }
+      //   })
+      // }, 2000)
     },
     // 初始化滚动
     initScroll () {
@@ -307,6 +363,9 @@ export default {
     refresh () {
       this.scroll && this.scroll.refresh()
     },
+    destroy () {
+      this.scroll && this.scroll.destroy()
+    },
     forceUpdate () {
       if (this.isPullUpLoad) {
         this.isPullUpLoad = false
@@ -345,9 +404,9 @@ export default {
     // 根据主键删除发票
     deleteInvoiceById (invoiceId) {
       this.invoiceList.some((invoiceData, dataIndex) => {
-        return invoiceData.list.some((invoice, invoiceIndex) => {
-          if (invoice.invoiceId === invoiceId) {
-            this.invoiceList[dataIndex].list.splice(invoiceIndex, 1)
+        return invoiceData.invoiceList.some((invoice, invoiceIndex) => {
+          if (invoice.invoiceReqSerialNo === invoiceId) {
+            this.invoiceList[dataIndex].invoiceList.splice(invoiceIndex, 1)
             return true
           }
         })
@@ -364,11 +423,25 @@ export default {
         },
         onConfirm () {
           args.parent.onItemClick()
-          let invoiceId = args.primaryKey
-          // TODO 请求接口删除，成功则遍历 invoiceList 删除对应的数据，失败则提示 "失败"
-          setTimeout(() => {
-            vm.deleteInvoiceById(invoiceId)
-          }, 2000)
+          console.log(args)
+          let postData = {
+            openid: vm.userInfo.openid,
+            invoiceReqSerialNo: args.primaryKey
+          }
+          vm.$vux.loading.show({text: ''})
+          vm.$http.post(vm.API.deleteMyInvoice, postData).then(res => {
+            vm.$vux.loading.hide()
+            if (res.return_code === '0000') {
+              vm.deleteInvoiceById(args.primaryKey)
+              return true
+            } else {
+              vm.$vux.toast.show({
+                text: res.return_message,
+                type: 'text'
+              })
+              return false
+            }
+          })
         }
       })
     },
@@ -391,6 +464,16 @@ export default {
           console.log('show')
         }
       })
+    },
+    resetList () {
+      this.page = 1
+      // this.invoiceList = []
+      this.startY = 0
+      this.pullUpDirty = true
+      this.pullUpLoad = false
+      this.isPullUpLoad = false
+      this.loading = false
+      this.getInvoiceList()
     }
   }
 }
@@ -527,10 +610,10 @@ export default {
     .content-area {
       /*height: 85%;*/
       /*height: 41rem;*/
-      /*height: 100%;*/
+      height: 100%;
       .wrapper {
         position: absolute;
-        top: 222px;
+        top: 200px;
         bottom: 10px;
         margin-top: 10px;
         width: 100%;
@@ -566,6 +649,7 @@ export default {
                 }
                 .type {
                   font-size: 24px;
+                  padding-top: 10px;
                 }
                 .pending {
                   color: #3CC7B2;
@@ -590,8 +674,9 @@ export default {
         }
       }
       .pullup-wrapper {
-        position: absolute;
-        bottom: 40px;
+        position: relative;
+        /*bottom: 40px;*/
+        top: 10px;
         width: 100%;
         display: flex;
         justify-content: center;
@@ -614,8 +699,8 @@ export default {
         height: 100%;
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        align-items: center;
+        /*justify-content: center;*/
+        /*align-items: center;*/
         .icon {
           margin-top: 260px;
           img {
